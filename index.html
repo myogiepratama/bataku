@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BATAKU – Bangun Bertahap Terukur</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700&family=Public+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#12233A;--mute:#4B5B70;--bg:#F1F5F4;--card:#fff;--line:#CBD6D4;--river:#0B6B73;--river-d:#08525A;--amber:#B45309;--amber-bg:#FEF3C7;--ok:#166534;--ok-bg:#DCFCE7}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 17px/1.5 'Public Sans',system-ui,sans-serif}
+h1,h2,h3{font-family:'Bricolage Grotesque','Public Sans',sans-serif;line-height:1.15;margin:0}
+.wrap{max-width:960px;margin:0 auto;padding:20px 16px 64px}
+header{display:flex;gap:16px;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;margin-bottom:12px}
+h1{font-size:44px;color:var(--river-d)}
+.sub{color:var(--mute);margin:4px 0 0;max-width:46ch}
+.note{background:var(--amber-bg);color:#78350F;border-radius:10px;padding:10px 14px;font-size:15px;margin:12px 0 20px}
+nav{display:flex;gap:4px;border-bottom:2px solid var(--line);margin-bottom:20px}
+nav button{background:none;border:0;padding:12px 18px;font:600 16px 'Public Sans',sans-serif;color:var(--mute);cursor:pointer;border-bottom:4px solid transparent;margin-bottom:-2px}
+nav button[aria-selected=true]{color:var(--river-d);border-bottom-color:var(--river)}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid #1D4ED8;outline-offset:2px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:720px){.grid{grid-template-columns:1fr}h1{font-size:36px}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:20px}
+.card h2{font-size:22px;margin-bottom:12px}
+label{display:block;font-weight:600;font-size:15px;margin:12px 0 4px}
+input[type=number],select{width:100%;padding:10px 12px;border:1px solid #8CA0A0;border-radius:8px;font:inherit;background:#fff;color:var(--ink)}
+table{width:100%;border-collapse:collapse}
+td{padding:8px 0;border-bottom:1px solid #E3EAE9;vertical-align:top}
+td:last-child{text-align:right;font-weight:600;white-space:nowrap}
+tr.total td{border-bottom:0;font-size:19px;color:var(--river-d)}
+.btn{background:var(--river);color:#fff;border:0;border-radius:8px;padding:12px 18px;font:600 16px 'Public Sans',sans-serif;cursor:pointer}
+.btn:hover:not(:disabled){background:var(--river-d)}
+.btn:disabled{background:#9DB1B0;cursor:not-allowed}
+.btn.ghost{background:#fff;color:var(--river-d);border:1px solid var(--river)}
+.weeks{display:flex;gap:8px;margin:12px 0}
+.wk{flex:1;text-align:center;padding:10px 0;border-radius:8px;border:1px solid var(--line);font-weight:600;color:var(--mute);background:#fff}
+.wk.on{background:var(--river);border-color:var(--river);color:#fff}
+.badge{display:inline-block;border-radius:999px;padding:2px 10px;font-size:14px;font-weight:600;background:var(--amber-bg);color:#78350F}
+.badge.ok{background:var(--ok-bg);color:var(--ok)}
+.muted{color:var(--mute);font-size:15px}
+.stage{display:flex;gap:20px;align-items:center;flex-wrap:wrap}
+.termin{border-top:1px solid var(--line);padding-top:14px;margin-top:14px}
+.termin.lock{opacity:.55}
+.chk{display:flex;gap:10px;align-items:center;margin:8px 0;font-weight:500}
+.chk input{width:22px;height:22px}
+.photo{max-width:220px;border-radius:8px;display:block;margin-top:8px}
+.pct{width:100%;height:10px;background:#E3EAE9;border-radius:6px;overflow:hidden;margin:8px 0}
+.pct i{display:block;height:100%;background:var(--river)}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <div>
+    <h1>BATAKU</h1>
+    <p class="sub">Bangun bertahap terukur: menabung dulu, dana kredit langsung ke toko dan tukang, bukan ke tangan.</p>
+  </div>
+  <button class="btn ghost" data-act="reset">Mulai ulang demo</button>
+</header>
+<p class="note">Prototipe untuk BTN Housingpreneur Batch 3. Semua angka adalah asumsi simulasi, bukan penawaran kredit. Bunga dasar mengacu pada SBDK mikro BTN yang dipublikasikan (cek ulang di btn.co.id) dan margin risiko adalah asumsi.</p>
+<nav role="tablist">
+  <button role="tab" data-tab="sim">Simulasi kredit</button>
+  <button role="tab" data-tab="fam">Keluarga</button>
+  <button role="tab" data-tab="art">Tukang dan verifikasi</button>
+</nav>
+<main id="app"></main>
+</div>
+<script>
+const PKG=[
+ {id:'m1',nama:'Modul 1: Atap dan peninggian lantai panggung',mat:3450000,upah:1350000},
+ {id:'m2',nama:'Modul 2: Sanitasi dan air bersih (RAB ilustratif)',mat:2900000,upah:1100000},
+ {id:'m3',nama:'Modul 3: Dinding dan ventilasi silang (RAB ilustratif)',mat:3300000,upah:1200000}
+];
+const PCT=[30,40,30];
+const fresh=()=>({tab:'sim',pkg:'m1',tenor:30,sbdk:13.65,margin:2.75,income:4900000,dpPct:12.5,saved:0,paid:0,
+  termin:PCT.map(()=>({meta:null,owner:false,kurator:false,released:false}))});
+let S=fresh();
+try{const raw=localStorage.getItem('bataku');if(raw)S=Object.assign(fresh(),JSON.parse(raw))}catch(e){}
+const photos={};
+const save=()=>{try{localStorage.setItem('bataku',JSON.stringify(S))}catch(e){}};
+const rp=n=>'Rp'+Math.round(n).toLocaleString('id-ID');
+function calc(){
+  const p=PKG.find(x=>x.id===S.pkg),rab=p.mat+p.upah,dp=rab*S.dpPct/100,pokok=rab-dp;
+  const annual=(S.sbdk+S.margin)/100,n=S.tenor,r=Math.pow(1+annual,1/52)-1;
+  const cicil=pokok*r/(1-Math.pow(1+r,-n)),total=cicil*n;
+  return{p,rab,dp,pokok,n,cicil,total,bunga:total-pokok,tabung:dp/4,rasio:cicil*52/12/S.income,annual};
+}
+function house(stage){
+  const f=(k,c)=>stage>=k?c:'#CBD6D4';
+  const lift=stage>=2?0:18;
+  return `<svg width="220" height="150" viewBox="0 0 220 150" role="img" aria-label="Rumah panggung tahap ${stage} dari 3">
+  <rect x="0" y="136" width="220" height="14" fill="#9CC5C8"/>
+  ${[40,80,140,180].map(x=>`<rect x="${x}" y="${70+lift}" width="8" height="${66-lift}" fill="${f(2,'#8A5A2B')}"/>`).join('')}
+  <rect x="28" y="${62+lift}" width="164" height="10" fill="${f(2,'#8A5A2B')}"/>
+  <rect x="40" y="${24+lift}" width="140" height="38" fill="${f(3,'#E7D3B4')}"/>
+  <polygon points="28,${26+lift} 110,${-6+lift} 192,${26+lift}" fill="${f(1,'#0B6B73')}"/>
+  </svg>`;
+}
+const stageNow=()=>S.termin.filter(t=>t.released).length;
+function viewSim(){
+  const c=calc();
+  return `<div class="grid">
+  <section class="card"><h2>Atur simulasi</h2>
+   <label for="pkg">Paket modul</label>
+   <select id="pkg" data-k="pkg">${PKG.map(p=>`<option value="${p.id}" ${p.id===S.pkg?'selected':''}>${p.nama} (${rp(p.mat+p.upah)})</option>`).join('')}</select>
+   <label for="tenor">Tenor (minggu)</label><input id="tenor" type="number" min="12" max="52" data-k="tenor" value="${S.tenor}">
+   <label for="sbdk">Bunga dasar mikro (% per tahun)</label><input id="sbdk" type="number" step="0.05" data-k="sbdk" value="${S.sbdk}">
+   <label for="margin">Margin risiko (% per tahun)</label><input id="margin" type="number" step="0.05" data-k="margin" value="${S.margin}">
+   <label for="income">Penghasilan rumah tangga per bulan (hipotesis, Rp)</label><input id="income" type="number" step="100000" data-k="income" value="${S.income}">
+  </section>
+  <section class="card"><h2>Hasil per siklus</h2>
+   <table>
+    <tr><td>Nilai RAB modul</td><td>${rp(c.rab)}</td></tr>
+    <tr><td>Uang muka ${S.dpPct}% dari tabungan</td><td>${rp(c.dp)}</td></tr>
+    <tr><td>Tabungan wajib per minggu (4 minggu)</td><td>${rp(c.tabung)}</td></tr>
+    <tr><td>Pokok kredit</td><td>${rp(c.pokok)}</td></tr>
+    <tr><td>Bunga efektif per tahun</td><td>${(c.annual*100).toFixed(2).replace('.',',')}%</td></tr>
+    <tr><td>Total bunga selama ${c.n} minggu</td><td>${rp(c.bunga)}</td></tr>
+    <tr class="total"><td>Cicilan per minggu</td><td>${rp(c.cicil)}</td></tr>
+    <tr><td>Cicilan terhadap penghasilan</td><td>${(c.rasio*100).toFixed(1).replace('.',',')}%</td></tr>
+   </table>
+   <p class="muted">Cicilan dihitung anuitas dengan bunga efektif tahunan yang diubah ke tingkat mingguan. Rasio ini baru terbukti setelah pilot mengukur penghasilan sebenarnya.</p>
+  </section></div>`;
+}
+function viewFam(){
+  const c=calc(),active=S.saved>=4,done=S.paid>=c.n;
+  return `<div class="grid">
+  <section class="card"><div class="stage">${house(stageNow())}<div><h2>Rumah Ibu Siti, Plaju</h2><p class="muted" style="margin:0">${c.p.nama}</p><p style="margin:8px 0 0"><span class="badge ${active?'ok':''}">${active?'Kredit aktif':'Menabung dulu'}</span></p></div></div></section>
+  <section class="card"><h2>1. Menabung untuk membuka kredit</h2>
+   <div class="weeks">${[1,2,3,4].map(i=>`<div class="wk ${S.saved>=i?'on':''}">Minggu ${i}</div>`).join('')}</div>
+   <p class="muted">Setoran per minggu ${rp(c.tabung)}. Empat minggu berturut-turut membuka kredit dan menjadi uang muka.</p>
+   <button class="btn" data-act="save" ${active?'disabled':''}>${active?'Uang muka terkumpul':`Setor ${rp(c.tabung)} minggu ke-${S.saved+1}`}</button>
+  </section>
+  <section class="card"><h2>2. Dana kredit di rekening escrow</h2>
+   <table>
+    <tr><td>Toko bangunan mitra (material, harga terkunci)</td><td>${active?rp(c.p.mat):'Belum dibuka'}</td></tr>
+    <tr><td>Tukang, dibayar per termin</td><td>${active?rp(c.p.upah):'Belum dibuka'}</td></tr>
+    <tr><td>Dana tunai ke keluarga</td><td>Rp0</td></tr>
+   </table>
+   <p class="muted">Kredit tidak pernah dicairkan tunai. Uang muka dan kredit bersama menutup RAB.</p>
+  </section>
+  <section class="card"><h2>3. Cicilan mingguan</h2>
+   <div class="pct"><i style="width:${Math.min(100,S.paid/c.n*100)}%"></i></div>
+   <p class="muted">${S.paid} dari ${c.n} minggu terbayar, total ${rp(S.paid*c.cicil)}.</p>
+   <button class="btn" data-act="pay" ${(!active||done)?'disabled':''}>${done?'Lunas':`Bayar ${rp(c.cicil)} minggu ke-${S.paid+1}`}</button>
+  </section></div>`;
+}
+function viewArt(){
+  const c=calc(),active=S.saved>=4;
+  return `<div class="grid"><section class="card" style="grid-column:1/-1"><div class="stage">${house(stageNow())}<div><h2>Pak Hendra, tukang bersertifikat</h2><p class="muted" style="margin:0">Upah ${rp(c.p.upah)} dibayar dari escrow dalam tiga termin. Tiap termin butuh foto progres, persetujuan pemilik, dan persetujuan kurator independen.</p></div></div></section>
+  ${S.termin.map((t,i)=>{
+    const prevOk=i===0||S.termin[i-1].released, open=active&&prevOk, amt=c.p.upah*PCT[i]/100;
+    const ready=t.meta&&t.owner&&t.kurator&&!t.released&&open;
+    return `<section class="card ${open?'':'lock'}"><h2>Termin ${i+1} (${PCT[i]}%)</h2>
+     <p style="margin:0 0 8px">${rp(amt)} ${t.released?'<span class="badge ok">Sudah cair</span>':'<span class="badge">Menunggu</span>'}</p>
+     ${open?'':'<p class="muted">Terbuka setelah kredit aktif dan termin sebelumnya cair.</p>'}
+     <label for="f${i}">Foto progres</label>
+     <input id="f${i}" type="file" accept="image/*" capture="environment" data-photo="${i}" ${open&&!t.released?'':'disabled'}>
+     ${photos[i]?`<img class="photo" src="${photos[i]}" alt="Foto progres termin ${i+1}">`:''}
+     ${t.meta?`<p class="muted">${t.meta}</p>`:''}
+     <label class="chk"><input type="checkbox" data-own="${i}" ${t.owner?'checked':''} ${t.meta&&!t.released?'':'disabled'}>Pemilik rumah menyetujui</label>
+     <label class="chk"><input type="checkbox" data-kur="${i}" ${t.kurator?'checked':''} ${t.meta&&!t.released?'':'disabled'}>Kurator teknis menyetujui</label>
+     <button class="btn" data-act="rel" data-i="${i}" ${ready?'':'disabled'}>Cairkan ${rp(amt)} ke tukang</button></section>`}).join('')}
+  </div>`;
+}
+function render(){
+  document.querySelectorAll('nav button').forEach(b=>b.setAttribute('aria-selected',b.dataset.tab===S.tab));
+  document.getElementById('app').innerHTML={sim:viewSim,fam:viewFam,art:viewArt}[S.tab]();
+  save();
+}
+document.addEventListener('click',e=>{
+  const t=e.target.closest('[data-tab],[data-act]');if(!t)return;
+  if(t.dataset.tab){S.tab=t.dataset.tab;return render()}
+  const a=t.dataset.act;
+  if(a==='reset'){S=fresh();for(const k in photos)delete photos[k]}
+  if(a==='save'&&S.saved<4)S.saved++;
+  if(a==='pay'&&S.paid<calc().n)S.paid++;
+  if(a==='rel')S.termin[+t.dataset.i].released=true;
+  render();
+});
+document.addEventListener('change',e=>{
+  const el=e.target;
+  if(el.dataset.k){const k=el.dataset.k;S[k]=k==='pkg'?el.value:Math.max(0,parseFloat(el.value)||0);if(k==='tenor')S.tenor=Math.min(52,Math.max(12,S.tenor||30));return render()}
+  if(el.dataset.own!==undefined){S.termin[+el.dataset.own].owner=el.checked;return render()}
+  if(el.dataset.kur!==undefined){S.termin[+el.dataset.kur].kurator=el.checked;return render()}
+  if(el.dataset.photo!==undefined&&el.files[0]){
+    const i=+el.dataset.photo;photos[i]=URL.createObjectURL(el.files[0]);
+    const stamp=new Date().toLocaleString('id-ID');
+    const done=pos=>{S.termin[i].meta='Diambil '+stamp+(pos?', lokasi '+pos.coords.latitude.toFixed(4)+', '+pos.coords.longitude.toFixed(4):', lokasi tidak tersedia');render()};
+    if(navigator.geolocation)navigator.geolocation.getCurrentPosition(done,()=>done(null),{timeout:5000});else done(null);
+  }
+});
+render();
+</script>
+</body>
+</html>
